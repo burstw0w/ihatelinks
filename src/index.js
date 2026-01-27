@@ -41,7 +41,7 @@ client.on("messageCreate", (msg) => {
 async function handleUrl(msg) {
 
   let check = msg.content.match(
-    /\bhttps?:\/\/(www\.)?(instagram\.com|tiktok\.com|vm\.tiktok\.com|twitter\.com|x\.com|reddit\.com|pinterest\.com|douyin\.com)\S+/gi
+    /\bhttps?:\/\/(www\.)?(instagram\.com|tiktok\.com|vm\.tiktok\.com|vt\.tiktok\.com|twitter\.com|x\.com|reddit\.com|pinterest\.com|douyin\.com)\S+/gi
   );
 
   if (check) {
