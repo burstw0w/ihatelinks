@@ -1,59 +1,43 @@
 # iHateLinks
 
-A Discord bot that automatically downloads and re-uploads media from various social platforms, fixing embeds that Discord doesn't handle well. Handles compression as well, managing to bypass upload size limits.  Been doing that since 2022.
+Discord bot that downloads and re-uploads media from social platforms, fixing broken embeds. Handles compression to stay within upload limits. Running since 2022.
 
 ## Supported Platforms
 
-- **Instagram** - Reels, Posts, TV, Carousels
-- **TikTok** - Videos (including Douyin)
-- **Twitter/X** - Videos
-- **Reddit** - Videos
+- Instagram - Reels, Posts, Stories, Carousels
+- TikTok - Videos (including Douyin)
+- Twitter/X - Videos
+- Reddit - Videos
+- Pinterest - Videos
+- YouTube Shorts
 
-## Features
+## Usage
 
-- 🎬 Auto-detects media URLs in messages
-- 📦 Downloads and re-uploads media directly to Discord
-- 🗜️ Automatic compression for large files
-- 📊 Respects Discord server boost tier upload limits
-- 🔢 Select specific items from carousel posts (e.g., "2" or "sve/all")
-- 🔄 Python fallback for restricted Instagram content
-
-## Project Structure
+Paste a supported URL in any channel the bot can read:
 
 ```
-ihateinstagram/
-├── src/
-│   ├── index.js              # Entry point
-│   ├── bot.js                # Discord client setup
-│   ├── config.js             # Configuration
-│   ├── handlers/
-│   │   └── messageHandler.js # URL routing
-│   ├── platforms/
-│   │   ├── index.js          # Platform exports
-│   │   ├── instagram.js      # Instagram handler
-│   │   ├── tiktok.js         # TikTok handler
-│   │   ├── twitter.js        # Twitter/X handler
-│   │   ├── reddit.js         # Reddit handler
-│   │   └── pinterest.js      # Pinterest handler
-│   ├── utils/
-│   │   ├── download.js       # Download utilities
-│   │   ├── fileUtils.js      # File operations
-│   │   └── compression.js    # Video compression
-│   └── scripts/
-│       └── insta.py          # Python Instagram fallback
-└── package.json
+https://www.instagram.com/reel/ABC123/
+https://www.tiktok.com/@user/video/123456
+https://twitter.com/user/status/123456
 ```
+
+For Instagram carousels and stories:
+- No number = first item
+- `2` = second item
+- `sve` or `all` = all items
 
 ## Setup
 
-### 1. Install Dependencies
+### Dependencies
 
 ```bash
 npm install
-pip install instaloader instagrapi --break-system-packages
+pip install gallery-dl yt-dlp --break-system-packages
 ```
 
-### 2. Configure
+Also requires `ffmpeg` and `chromium` installed system-wide.
+
+### Config
 
 Edit `src/config.js`:
 
@@ -64,19 +48,22 @@ module.exports = {
     },
     instagram: {
         sessionId: "YOUR_INSTAGRAM_SESSION_ID"
+    },
+    paths: {
+        pythonScript: "./scripts/insta.py",
+        pythonBinary: "python3",
+        chromium: "/usr/bin/chromium-browser"
     }
 };
 ```
 
-Also update the session ID in `src/scripts/insta.py`. I still need to patch this up :)
-
-### 3. Get Instagram Session ID
+### Instagram Session ID
 
 1. Log into Instagram in Firefox
-2. Open DevTools (F12) → Storage → Cookies → instagram.com
+2. DevTools (F12) → Storage → Cookies → instagram.com
 3. Copy the `sessionid` value
 
-### 4. Run
+### Run
 
 ```bash
 npm start
@@ -86,40 +73,25 @@ node src/index.js
 pm2 start src/index.js
 ```
 
-## Usage
-
-Just paste a supported URL in any channel the bot can see:
+## Project Structure
 
 ```
-https://www.instagram.com/reel/ABC123/
-https://www.tiktok.com/@user/video/123456
-https://twitter.com/user/status/123456
+src/
+├── index.js
+├── bot.js
+├── config.js
+├── handlers/
+│   └── messageHandler.js
+├── platforms/
+│   ├── instagram.js
+│   ├── tiktok.js
+│   ├── twitter.js
+│   ├── reddit.js
+│   └── pinterest.js
+├── utils/
+│   ├── download.js
+│   ├── fileUtils.js
+│   └── compression.js
+└── scripts/
+    └── insta.py
 ```
-
-### Carousel Selection
-
-For Instagram carousels:
-- No number = first item
-- `2` = second item
-- `sve` or `all` = all items
-
-## Requirements
-
-- Node.js 18+
-- Python 3.8+
-- ffmpeg (for compression)
-- Chromium (for Reddit/Pinterest)
-
-## Dependencies
-
-### Node.js
-- discord.js
-- instagram-url-direct
-- tiktokdl
-- get-twitter-media
-- axios
-- puppeteer
-
-### Python
-- instaloader
-- instagrapi

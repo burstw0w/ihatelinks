@@ -34,12 +34,10 @@ function parseMediaIndex(content) {
 }
 
 async function handleMessage(msg, client) {
-    // Ignore bot messages
     if (msg.author.bot) {
         return;
     }
 
-    // Check for supported URLs
     const urls = msg.content.match(URL_PATTERN);
     if (!urls || urls.length === 0) {
         return;

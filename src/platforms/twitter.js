@@ -7,7 +7,6 @@ async function handleTwitter(msg, url, author, velicina) {
     console.log("Processing Twitter URL:", url);
 
     try {
-        // Normalize x.com to twitter.com
         const normalizedUrl = url.replace("x.com", "twitter.com");
         
         const media = await getTwitterMedia(normalizedUrl, {

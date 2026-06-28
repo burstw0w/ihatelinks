@@ -13,12 +13,12 @@ function createBot() {
     });
 
     client.on("ready", (c) => {
-        console.log(`✅ Bot is online as ${c.user.tag}`);
-        console.log(`📊 Serving ${c.guilds.cache.size} servers`);
+        console.log(`Bot online as ${c.user.tag}`);
+        console.log(`Serving ${c.guilds.cache.size} servers`);
     });
 
     client.on("error", (error) => {
-        console.error("❌ Discord.js Error:", error);
+        console.error("Discord.js error:", error);
     });
 
     client.on("messageCreate", (msg) => {

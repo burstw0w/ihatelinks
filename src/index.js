@@ -2,5 +2,5 @@
 
 const { startBot } = require("./bot");
 
-console.log("🚀 Starting Discord Media Embed Bot...");
+console.log("Starting bot...");
 startBot();

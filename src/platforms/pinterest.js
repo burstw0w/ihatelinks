@@ -16,17 +16,13 @@ async function getPinterestVideoUrl(pinterestUrl) {
         const url = "https://ptsave.com/info?url=" + pinterestUrl;
         await page.goto(url);
 
-        // Check if error message appears
         const errorMessage = await page.$eval("div.text-xl", el => el.textContent.trim());
         if (errorMessage.includes("Sorry, we could not find any video on this Pin.")) {
             console.log("Video not found on Pin.");
             return null;
         }
 
-        // Wait for the video element to load
         await page.waitForSelector("video.h-80");
-
-        // Get the src attribute of the video element
         videoSrc = await page.$eval("video.h-80", el => el.getAttribute("src"));
     } catch (error) {
         console.error("Error fetching Pinterest video:", error);

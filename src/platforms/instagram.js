@@ -1,4 +1,3 @@
-const { instagramGetUrl } = require("instagram-url-direct");
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 const config = require("../config");
@@ -6,43 +5,21 @@ const { downloadVideo, downloadImage, checkFileType } = require("../utils/downlo
 const { generateRandomString, deleteFileAsync, checkFileSize } = require("../utils/fileUtils");
 const { handleVideoCompression } = require("../utils/compression");
 
-const INSTAGRAM_PATTERN = /\bhttps?:\/\/(?:www\.)?instagram\.com\/(?:p|stories|tv|reel)\/[\w-]+(?:\/\S*)?/gi;
+const INSTAGRAM_PATTERN = /\bhttps?:\/\/(?:www\.)?instagram\.com\/(?:p|stories|tv|reel|reels)\/[\w-]+(?:\/\S*)?/gi;
 
 function isValidInstagramUrl(url) {
+    INSTAGRAM_PATTERN.lastIndex = 0;
     return INSTAGRAM_PATTERN.test(url);
 }
 
 async function getInstagramMedia(url) {
-    // Reset regex state
-    INSTAGRAM_PATTERN.lastIndex = 0;
-    
-    if (!isValidInstagramUrl(url)) {
-        console.log("Invalid Instagram URL pattern");
-        return null;
-    }
-
     try {
-        // Try fast unauthenticated method first
-        const link = await instagramGetUrl(url);
-        console.log("Got URL via instagram-url-direct");
-        return link;
-    } catch (error) {
-        console.error("instagram-url-direct failed:", error.message);
-        console.log("Trying Python fallback...");
-
-        try {
-            const { stdout } = await exec(`python3 ${config.paths.pythonScript} "${url}"`);
-            const urls = stdout.trim().split("\n").filter(u => u.length > 0);
-            
-            if (urls.length > 0) {
-                return { url_list: urls };
-            } else {
-                return null;
-            }
-        } catch (pyError) {
-            console.error("Python fallback also failed:", pyError.message);
-            return null;
-        }
+        const { stdout } = await exec(`${config.paths.pythonBinary} ${config.paths.pythonScript} "${url}" "${config.instagram.sessionId}"`);
+        const urls = stdout.trim().split("\n").filter(u => u.length > 0);
+        return urls.length > 0 ? { url_list: urls } : null;
+    } catch (pyError) {
+        console.error("gallery-dl failed:", pyError.message);
+        return null;
     }
 }
 
@@ -56,12 +33,10 @@ async function handleInstagram(msg, url, author, velicina, match) {
         return null;
     }
 
-    // No specific index requested - get first item
     if (match[0] === "nema") {
         return await handleSingleMedia(msg, url, author, velicina, link.url_list[0]);
     }
 
-    // Specific index requested
     if (!isNaN(match[0])) {
         const index = parseInt(match[0]) - 1;
         if (index < link.url_list.length) {
@@ -72,12 +47,14 @@ async function handleInstagram(msg, url, author, velicina, match) {
         }
     }
 
-    // "sve" or "all" - get all items
     return await handleMultipleMedia(msg, url, author, velicina, link.url_list);
 }
 
 async function handleSingleMedia(msg, originalUrl, author, velicina, mediaUrl) {
-    const isVideo = await checkFileType(mediaUrl) === 0 || mediaUrl.includes("kkinstagram");
+    const isLocalFile = mediaUrl.startsWith('/');
+    const isVideo = isLocalFile
+        ? mediaUrl.endsWith('.mp4')
+        : (await checkFileType(mediaUrl) === 0 || mediaUrl.includes("kkinstagram"));
     
     if (isVideo) {
         return await processVideo(msg, originalUrl, author, velicina, mediaUrl);
@@ -87,13 +64,17 @@ async function handleSingleMedia(msg, originalUrl, author, velicina, mediaUrl) {
 }
 
 async function processVideo(msg, originalUrl, author, velicina, videoUrl) {
-    const fname = "ins" + generateRandomString() + ".mp4";
-    await downloadVideo(videoUrl, fname);
+    let fname;
+    if (videoUrl.startsWith('/')) {
+        fname = videoUrl;
+    } else {
+        fname = "ins" + generateRandomString() + ".mp4";
+        await downloadVideo(videoUrl, fname);
+    }
     
     const result = checkFileSize(fname, velicina);
     
     if (result === 0) {
-        // Try compression
         const compressionMsg = await msg.reply({ content: "Превелик фајл, ајд да пробам да компресујем" });
         const { shouldCompress, compressedFilePath } = await handleVideoCompression(fname, velicina);
 
@@ -161,12 +142,13 @@ async function handleMultipleMedia(msg, originalUrl, author, velicina, urlList) 
 
     for (let i = 0; i < urlList.length && i < maxItems; i++) {
         const mediaUrl = urlList[i];
-        const isVideo = await checkFileType(mediaUrl) === 0;
-        
+        const isLocalFile = mediaUrl.startsWith('/');
+        const isVideo = isLocalFile ? mediaUrl.endsWith('.mp4') : await checkFileType(mediaUrl) === 0;
+
         if (isVideo) {
-            const fname = "ins" + generateRandomString() + ".mp4";
-            await downloadVideo(mediaUrl, fname);
-            
+            const fname = isLocalFile ? mediaUrl : "ins" + generateRandomString() + ".mp4";
+            if (!isLocalFile) await downloadVideo(mediaUrl, fname);
+
             if (checkFileSize(fname, velicina) === 0) {
                 deleteFileAsync(fname);
                 skippedLarge = true;
@@ -176,7 +158,7 @@ async function handleMultipleMedia(msg, originalUrl, author, velicina, urlList) 
         } else {
             const fname = "ins" + generateRandomString() + ".jpg";
             await downloadImage(mediaUrl, fname);
-            
+
             if (checkFileSize(fname, velicina) === 0) {
                 deleteFileAsync(fname);
                 skippedLarge = true;

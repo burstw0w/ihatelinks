@@ -7,6 +7,7 @@ module.exports = {
     },
     paths: {
         pythonScript: "./scripts/insta.py",
+        pythonBinary: "/root/.local/pipx/venvs/instaloader/bin/python",
         chromium: "/usr/bin/chromium-browser"
     }
 };
